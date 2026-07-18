@@ -34,6 +34,12 @@ def test_normalizes_bullets_and_whitespace():
     assert cleaned[0].text == "- Erster Punkt mit Inhalt\n- Zweiter Punkt mit Inhalt"
 
 
+def test_drops_single_character_plot_markers():
+    chunks = [_chunk("k-Means Beispiel mit genug Inhalt\nx\nx\ne\nh\nClusters after round 1", 1)]
+    cleaned = clean_chunks(chunks)
+    assert cleaned[0].text == "k-Means Beispiel mit genug Inhalt\nClusters after round 1"
+
+
 def test_no_header_removal_on_few_pages():
     # Bei sehr wenigen Seiten kann man Header nicht zuverlässig erkennen – nichts entfernen.
     chunks = [_chunk("Gleiche Zeile auf beiden Seiten, lang genug.", i) for i in (1, 2)]

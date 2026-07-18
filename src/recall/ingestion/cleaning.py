@@ -36,6 +36,9 @@ def clean_chunks(chunks: list[Chunk]) -> list[Chunk]:
             line = _normalize_line(raw)
             if not line or line in repeated or _PAGE_NUMBER_RE.match(line):
                 continue
+            # Diagrammfolien liefern Plot-Marker (x, e, h, …) als eigene Zeilen
+            if len(line) == 1:
+                continue
             lines.append(line)
         text = "\n".join(lines)
         if len(text) < _MIN_CHARS:
