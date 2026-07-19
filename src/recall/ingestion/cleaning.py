@@ -27,6 +27,26 @@ def _repeated_lines(chunks: list[Chunk], threshold: float = 0.5) -> set[str]:
     return {line for line, n in counts.items() if n / len(chunks) > threshold}
 
 
+def _is_buildup_of(prev_text: str, curr_text: str) -> bool:
+    """True, wenn prev eine (unvollständigere) Aufbau-Version von curr ist.
+
+    Vorlesungen zeigen dieselbe Folie oft mehrfach mit wachsendem Inhalt;
+    kartentauglich ist nur die vollständigste Version.
+    """
+    prev_lines = set(prev_text.splitlines())
+    curr_lines = set(curr_text.splitlines())
+    return prev_lines <= curr_lines
+
+
+def _drop_buildup_predecessors(chunks: list[Chunk]) -> list[Chunk]:
+    merged: list[Chunk] = []
+    for chunk in chunks:
+        if merged and _is_buildup_of(merged[-1].text, chunk.text):
+            merged.pop()
+        merged.append(chunk)
+    return merged
+
+
 def clean_chunks(chunks: list[Chunk]) -> list[Chunk]:
     repeated = _repeated_lines(chunks)
     cleaned: list[Chunk] = []
@@ -44,4 +64,4 @@ def clean_chunks(chunks: list[Chunk]) -> list[Chunk]:
         if len(text) < _MIN_CHARS:
             continue
         cleaned.append(chunk.model_copy(update={"text": text}))
-    return cleaned
+    return _drop_buildup_predecessors(cleaned)

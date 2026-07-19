@@ -40,9 +40,46 @@ def test_drops_single_character_plot_markers():
     assert cleaned[0].text == "k-Means Beispiel mit genug Inhalt\nClusters after round 1"
 
 
+def test_buildup_slides_keep_only_fullest_version():
+    # Aufbau-Folien: gleiche Folie erscheint mehrfach mit wachsendem Inhalt
+    chunks = [
+        _chunk("Partitionierung von Daten\n- Grundidee der Aufteilung erklärt", 3),
+        _chunk(
+            "Partitionierung von Daten\n- Grundidee der Aufteilung erklärt\n- within-cluster klein",
+            4,
+        ),
+        _chunk(
+            "Partitionierung von Daten\n- Grundidee der Aufteilung erklärt\n"
+            "- within-cluster klein\n- between-cluster groß",
+            5,
+        ),
+    ]
+    cleaned = clean_chunks(chunks)
+    assert [c.page_number for c in cleaned] == [5]
+    assert "between-cluster" in cleaned[0].text
+
+
+def test_identical_consecutive_slides_collapse_to_one():
+    chunks = [_chunk("Exakt gleicher Folieninhalt, lang genug.", i) for i in (1, 2)]
+    cleaned = clean_chunks(chunks)
+    assert [c.page_number for c in cleaned] == [2]
+
+
+def test_unrelated_consecutive_slides_are_kept():
+    chunks = [
+        _chunk("Erste Folie über k-Means und Zentroiden.", 1),
+        _chunk("Zweite Folie über hierarchisches Clustering.", 2),
+    ]
+    cleaned = clean_chunks(chunks)
+    assert [c.page_number for c in cleaned] == [1, 2]
+
+
 def test_no_header_removal_on_few_pages():
     # Bei sehr wenigen Seiten kann man Header nicht zuverlässig erkennen – nichts entfernen.
-    chunks = [_chunk("Gleiche Zeile auf beiden Seiten, lang genug.", i) for i in (1, 2)]
+    chunks = [
+        _chunk(f"Gleiche Kopfzeile auf beiden Seiten\nEigener Inhalt der Seite {i}, lang genug.", i)
+        for i in (1, 2)
+    ]
     cleaned = clean_chunks(chunks)
     assert len(cleaned) == 2
-    assert "Gleiche Zeile" in cleaned[0].text
+    assert "Gleiche Kopfzeile" in cleaned[0].text
