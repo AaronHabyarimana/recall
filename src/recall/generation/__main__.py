@@ -8,6 +8,8 @@ import json
 import sys
 from pathlib import Path
 
+from google.genai import errors
+
 from recall.generation.generate import generate_cards
 from recall.ingestion.cleaning import clean_chunks
 from recall.ingestion.pdf import extract_chunks
@@ -35,6 +37,10 @@ def main() -> None:
             failures += 1
             print(f"!! Seite {chunk.page_number}: {e}")
             continue
+        except errors.APIError as e:
+            # z. B. Tageskontingent erschöpft: abbrechen, aber Teilergebnis behalten
+            print(f"!! Abbruch bei Seite {chunk.page_number}: API-Fehler {e.code} ({e.status})")
+            break
         cards.extend(new_cards)
         for card in new_cards:
             print(f"--- Seite {card.page_number} ---")
