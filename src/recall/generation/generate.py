@@ -1,11 +1,9 @@
 """Lernkarten aus Chunks generieren: Prompt bauen, Gemini fragen, JSON parsen."""
 
-import json
-import re
-
 from recall.generation.models import Card
 from recall.ingestion.models import Chunk
 from recall.llm_client import complete
+from recall.parsing import parse_json_list
 
 _PROMPT_TEMPLATE = """\
 Du erstellst Lernkarten aus Vorlesungsfolien für die Prüfungsvorbereitung.
@@ -27,9 +25,6 @@ Folientext (Seite {page_number} aus {source_file}):
 ---
 """
 
-# Gemini verpackt JSON trotz klarer Anweisung gern in ```json ... ```
-_CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$")
-
 
 def build_prompt(chunk: Chunk) -> str:
     return _PROMPT_TEMPLATE.format(
@@ -39,13 +34,7 @@ def build_prompt(chunk: Chunk) -> str:
 
 def parse_cards(response: str, chunk: Chunk) -> list[Card]:
     """Parst die Modellantwort zu Karten. Wirft ValueError bei unbrauchbarem JSON."""
-    stripped = _CODE_FENCE_RE.sub("", response.strip())
-    try:
-        raw = json.loads(stripped)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Antwort ist kein JSON: {response[:120]!r}") from e
-    if not isinstance(raw, list):
-        raise ValueError(f"Antwort ist keine Liste: {response[:120]!r}")
+    raw = parse_json_list(response)
     cards = []
     for item in raw:
         if not isinstance(item, dict) or "frage" not in item or "antwort" not in item:
