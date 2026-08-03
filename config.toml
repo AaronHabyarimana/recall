@@ -1,2 +1,7 @@
 [llm]
 model = "gemini-3.1-flash-lite"
+
+[review]
+# Zielwahrscheinlichkeit, eine Karte bei der Wiederholung noch zu können.
+# Höher = häufigere Wiederholungen. 0.9 ist der FSRS-Standard.
+desired_retention = 0.9

@@ -4,15 +4,13 @@ Modellname kommt aus config.toml, der API-Key aus .env (GEMINI_API_KEY).
 """
 
 import time
-import tomllib
 from functools import cache
-from pathlib import Path
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import errors
 
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.toml"
+from recall.config import config
 
 
 @cache
@@ -21,10 +19,8 @@ def _client() -> genai.Client:
     return genai.Client()  # liest GEMINI_API_KEY aus der Umgebung
 
 
-@cache
 def _model_name() -> str:
-    with CONFIG_PATH.open("rb") as f:
-        return tomllib.load(f)["llm"]["model"]
+    return config()["llm"]["model"]
 
 
 # Free-Tier-Limit: 5 Anfragen/Minute -> bei 429 warten und erneut versuchen
