@@ -6,7 +6,7 @@ Schlüssel ist die inhaltsabgeleitete `card_id` aus `recall.generation.models.Ca
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fsrs import Card as FSRSCard
@@ -51,11 +51,18 @@ CREATE INDEX IF NOT EXISTS idx_scheduling_due ON scheduling(due);
 """
 
 
-def connect(path: Path | str = DEFAULT_DB_PATH) -> sqlite3.Connection:
-    """Öffnet die Datenbank und legt fehlende Tabellen an."""
+def connect(
+    path: Path | str = DEFAULT_DB_PATH, *, check_same_thread: bool = True
+) -> sqlite3.Connection:
+    """Öffnet die Datenbank und legt fehlende Tabellen an.
+
+    `check_same_thread=False` braucht nur die Weboberfläche: Streamlit führt jeden
+    Durchlauf in einem eigenen Thread aus, die Verbindung soll die Durchläufe aber
+    überleben. Zugriffe bleiben serialisiert, weil pro Sitzung nur ein Thread läuft.
+    """
     if path != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(_SCHEMA)
@@ -193,4 +200,108 @@ def orphaned_cards(conn: sqlite3.Connection, known_ids: set[str]) -> list[sqlite
     return conn.execute(
         f"SELECT card_id, question, page_number FROM cards WHERE card_id NOT IN ({platzhalter})",
         list(known_ids),
+    ).fetchall()
+
+
+# --- Auswertungen für die Oberfläche ------------------------------------------------
+# Lesende Abfragen ohne Seiteneffekte. Sie liegen hier statt in der UI, damit die
+# Oberfläche kein SQL kennt und die Abfragen testbar bleiben.
+
+
+def all_cards(
+    conn: sqlite3.Connection,
+    *,
+    nur_lernbar: bool = False,
+    suche: str | None = None,
+    quelle: str | None = None,
+) -> list[sqlite3.Row]:
+    """Karten für die Übersicht, mit Fälligkeit und Anzahl bisheriger Bewertungen.
+
+    `suche` filtert über Frage und Antwort. SQLites LIKE ignoriert Groß-/Kleinschreibung
+    nur bei ASCII; für Umlaute im Suchbegriff muss die Schreibweise also passen.
+    """
+    bedingungen: list[str] = []
+    params: list = []
+    if nur_lernbar:
+        bedingungen.append("c.keep = 1")
+    if suche:
+        bedingungen.append("(c.question LIKE ? OR c.answer LIKE ?)")
+        params += [f"%{suche}%"] * 2
+    if quelle:
+        bedingungen.append("c.source_file = ?")
+        params.append(quelle)
+    where = f"WHERE {' AND '.join(bedingungen)}" if bedingungen else ""
+
+    return conn.execute(
+        f"""
+        SELECT c.card_id, c.question, c.answer, c.source_file, c.page_number,
+               c.keep, c.issue, c.reason, s.due,
+               (SELECT COUNT(*) FROM reviews r WHERE r.card_id = c.card_id) AS bewertungen
+        FROM cards c LEFT JOIN scheduling s ON s.card_id = c.card_id
+        {where}
+        ORDER BY c.source_file, c.page_number
+        """,
+        params,
+    ).fetchall()
+
+
+def due_forecast(
+    conn: sqlite3.Connection, tage: int = 14, now: datetime | None = None
+) -> list[tuple[str, int]]:
+    """Wie viele lernbare Karten an welchem Tag fällig werden, ab heute.
+
+    Tage ohne Fälligkeit kommen mit 0 vor - ein Balkendiagramm ohne die Lücken würde
+    den Verlauf verzerren. Alles Überfällige landet im ersten Bucket: für die Planung
+    zählt, was heute liegt, nicht wie lange es schon liegt. Tagesgrenzen sind UTC,
+    wie alle gespeicherten Zeitpunkte.
+    """
+    heute = (now or now_utc()).date()
+    grenze = heute + timedelta(days=tage)
+    rows = conn.execute(
+        """
+        SELECT date(s.due) AS tag, COUNT(*) AS anzahl
+        FROM cards c JOIN scheduling s USING (card_id)
+        WHERE c.keep = 1 AND date(s.due) < ?
+        GROUP BY tag
+        """,
+        (grenze.isoformat(),),
+    ).fetchall()
+    gezaehlt = {row["tag"]: row["anzahl"] for row in rows}
+
+    erster_tag = heute.isoformat()
+    ueberfaellig = sum(n for tag, n in gezaehlt.items() if tag <= erster_tag)
+
+    verlauf = [(erster_tag, ueberfaellig)]
+    for i in range(1, tage):
+        tag = (heute + timedelta(days=i)).isoformat()
+        verlauf.append((tag, gezaehlt.get(tag, 0)))
+    return verlauf
+
+
+def rating_history(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Alle Bewertungen chronologisch - Zeitpunkt und Note."""
+    return conn.execute("SELECT reviewed_at, rating FROM reviews ORDER BY reviewed_at").fetchall()
+
+
+def source_counts(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Karten je Quelldatei, aufgeteilt in lernbar und vom Critic verworfen."""
+    return conn.execute(
+        """
+        SELECT source_file,
+               SUM(keep)     AS lernbar,
+               SUM(1 - keep) AS verworfen,
+               COUNT(*)      AS gesamt
+        FROM cards GROUP BY source_file ORDER BY source_file
+        """
+    ).fetchall()
+
+
+def issue_counts(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Aus welchem Grund der Critic Karten verworfen hat."""
+    return conn.execute(
+        """
+        SELECT issue, COUNT(*) AS anzahl FROM cards
+        WHERE keep = 0 AND issue IS NOT NULL
+        GROUP BY issue ORDER BY anzahl DESC, issue
+        """
     ).fetchall()
