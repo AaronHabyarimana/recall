@@ -1,0 +1,172 @@
+[
+  {
+    "question": "Was sind die zwei Hauptziele der Datenanalyse?",
+    "answer": "Die Ziele sind das Verstehen existierender Daten und Zusammenhänge sowie das Vorhersagen zukünftiger Ereignisse.",
+    "source_file": "bd1.pdf",
+    "page_number": 2,
+    "card_id": "567998346785",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Karte prüft ein zentrales Konzept der Vorlesung eigenständig."
+  },
+  {
+    "question": "Was ist die Grundidee des Clusterings?",
+    "answer": "Die Daten werden in Teilmengen partitioniert, wobei Datenpunkte innerhalb einer Teilmenge ähnlich (kleine within-cluster-Distanz) und Datenpunkte verschiedener Teilmengen unähnlich zueinander sein sollen (große between-cluster-Distanz).",
+    "source_file": "bd1.pdf",
+    "page_number": 9,
+    "card_id": "a34d85664a8c",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Karte erläutert ein wichtiges methodisches Konzept."
+  },
+  {
+    "question": "Welches Beispiel wird für die Analyse metabolischer Pfade genannt?",
+    "answer": "Das Roche Pathway Poster wird als Beispiel für die Analyse metabolischer Pfade angeführt.",
+    "source_file": "bd1.pdf",
+    "page_number": 10,
+    "card_id": "9ef803540822",
+    "keep": false,
+    "issue": "kontextabhaengig",
+    "reason": "Die Frage bezieht sich direkt auf ein spezifisches, in der Folie genanntes Beispiel, das ohne Kontext nicht aussagekräftig ist."
+  },
+  {
+    "question": "Welche Eigenschaften weist das Roche Pathway Poster auf?",
+    "answer": "Es ist sehr detailliert und enthält eine große Menge an Daten.",
+    "source_file": "bd1.pdf",
+    "page_number": 10,
+    "card_id": "30058060e482",
+    "keep": false,
+    "issue": "trivia",
+    "reason": "Die Beschreibung einer Eigenschaft eines spezifischen Posters ist für die Prüfung nicht relevant."
+  },
+  {
+    "question": "Warum wird Cluster-Einteilung als Unsupervised Learning bezeichnet?",
+    "answer": "Es ist Unsupervised Learning, da im Vorfeld weder die Cluster selbst noch deren Eigenschaften oder das Verhalten der Mitglieder bekannt sein müssen.",
+    "source_file": "bd1.pdf",
+    "page_number": 15,
+    "card_id": "dca20fb72850",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Karte erklärt die theoretische Einordnung des Konzepts."
+  },
+  {
+    "question": "Warum werden für moderne Praxisanwendungen Big-Data-Methoden benötigt?",
+    "answer": "Da in der Praxis extrem viele Eingabedaten anfallen, die zudem sehr hochdimensional sind.",
+    "source_file": "bd1.pdf",
+    "page_number": 16,
+    "card_id": "368ae4ff95f8",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist eigenständig verständlich und prüfungsrelevant."
+  },
+  {
+    "question": "Welche drei mathematischen Bedingungen muss eine Funktion erfüllen, um als Metrik zu gelten?",
+    "answer": "Eine Metrik muss die Bedingungen der positiven Definitheit (d(x,y) ≥ 0 und d(x,y)=0 genau dann, wenn x=y), der Symmetrie (d(x,y) = d(y,x)) und der Dreiecks-Ungleichung (d(x,z) ≤ d(x,y) + d(y,z)) erfüllen.",
+    "source_file": "bd1.pdf",
+    "page_number": 18,
+    "card_id": "5333c0ed958b",
+    "keep": true,
+    "issue": null,
+    "reason": "Mathematische Definition einer Metrik ist eine klassische Prüfungsfrage."
+  },
+  {
+    "question": "Was sind die Vorteile der Verwendung der Euklidischen Distanz (2-Norm)?",
+    "answer": "Euklidische Räume sind gut vorstellbar und erlauben die Berechnung von Mittelwerten wie dem Schwerpunkt oder Zentroid.",
+    "source_file": "bd1.pdf",
+    "page_number": 18,
+    "card_id": "9565830a33d2",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Vorteile der Euklidischen Distanz werden präzise genannt."
+  },
+  {
+    "question": "Welche Distanzmaße können alternativ zur Euklidischen Distanz für Genom-Sequenzen und Texte verwendet werden?",
+    "answer": "Für Genom-Sequenzen wird die Levenshtein-Distanz verwendet, während für Texte beispielsweise die Jaccard-Distanz genutzt werden kann.",
+    "source_file": "bd1.pdf",
+    "page_number": 19,
+    "card_id": "aacc4f3074ad",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist ein eigenständiges fachliches Konzept."
+  },
+  {
+    "question": "Was versteht man unter dem Begriff 'Curse of Dimensionality' in Bezug auf euklidische Distanzen?",
+    "answer": "In hochdimensionalen Räumen wächst das Volumen des Raums gewaltig an, wodurch jedes Sample nur einen verschwindend geringen Teil des Raums abdecken kann und Distanzen seltsam werden.",
+    "source_file": "bd1.pdf",
+    "page_number": 20,
+    "card_id": "f03db2533d8d",
+    "keep": true,
+    "issue": null,
+    "reason": "Der Fluch der Dimensionalität ist ein grundlegendes Konzept der Datenanalyse."
+  },
+  {
+    "question": "Was beschreibt der Begriff 'Curse of Dimensionality' in Bezug auf euklidische Räume?",
+    "answer": "Der Begriff befasst sich mit der Frage, wie zufällige Daten in euklidischen Räumen aussehen und wie sich diese mit zunehmender Dimension verhalten.",
+    "source_file": "bd1.pdf",
+    "page_number": 23,
+    "card_id": "7b350a23614a",
+    "keep": false,
+    "issue": "duplikat",
+    "reason": "Fragt dasselbe ab wie die Karte auf Seite 20."
+  },
+  {
+    "question": "Was zeichnet hierarchisches Clustering aus?",
+    "answer": "Beim hierarchischen Clustering können Cluster andere Cluster umfassen.",
+    "source_file": "bd1.pdf",
+    "page_number": 32,
+    "card_id": "a7d8ceca1253",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist fachlich korrekt und eigenständig verständlich."
+  },
+  {
+    "question": "Wie beginnt der agglomerative Prozess beim hierarchischen Clustering?",
+    "answer": "Der agglomerative Prozess startet damit, dass jeder Datenpunkt als einzelner Cluster betrachtet wird.",
+    "source_file": "bd1.pdf",
+    "page_number": 33,
+    "card_id": "adbeaeef73fe",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist fachlich korrekt und eigenständig verständlich."
+  },
+  {
+    "question": "Wie beginnt der divisive Prozess beim hierarchischen Clustering?",
+    "answer": "Der divisive Prozess startet mit einem einzigen Cluster, der alle vorhandenen Punkte enthält.",
+    "source_file": "bd1.pdf",
+    "page_number": 33,
+    "card_id": "ead2ca475cc8",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist fachlich korrekt und eigenständig verständlich."
+  },
+  {
+    "question": "Welche zwei Voraussetzungen müssen für den k-Means-Algorithmus erfüllt sein?",
+    "answer": "Es muss die Cluster-Anzahl k bekannt sein und es müssen euklidische Distanzen verwendet werden.",
+    "source_file": "bd1.pdf",
+    "page_number": 39,
+    "card_id": "dd0a9620f63c",
+    "keep": true,
+    "issue": null,
+    "reason": "Klärt wichtige Voraussetzungen für die Anwendung des Algorithmus."
+  },
+  {
+    "question": "Warum ist die Wahl von k beim k-Means-Algorithmus kritisch?",
+    "answer": "Die Wahl von k ist kritisch für die Qualität des Clusterings, da eine zu geringe Anzahl an Clustern dazu führt, dass diese wahrscheinlich zu groß sind.",
+    "source_file": "bd1.pdf",
+    "page_number": 43,
+    "card_id": "66fb4c152e3f",
+    "keep": true,
+    "issue": null,
+    "reason": "Die Frage ist eigenständig verständlich und prüfungsrelevant."
+  },
+  {
+    "question": "Was ist das Hauptziel des BFR-Algorithmus?",
+    "answer": "Der BFR-Algorithmus ist eine approximative Variante von k-Means, die speziell für Daten optimiert ist, die nicht vollständig in den Hauptspeicher passen.",
+    "source_file": "bd1.pdf",
+    "page_number": 48,
+    "card_id": "6ea2d76e7cf2",
+    "keep": true,
+    "issue": null,
+    "reason": "Das Hauptziel des Algorithmus ist ein prüfungsrelevantes Konzept."
+  }
+]
