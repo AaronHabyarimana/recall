@@ -1,11 +1,9 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
-import pytest
 from fsrs import Rating
 
 from recall.review.db import (
     all_cards,
-    connect,
     due_cards,
     due_forecast,
     import_cards,
@@ -17,15 +15,7 @@ from recall.review.db import (
     stats,
 )
 from recall.review.scheduling import review
-
-JETZT = datetime(2026, 8, 3, 12, 0, tzinfo=UTC)
-
-
-@pytest.fixture
-def conn():
-    verbindung = connect(":memory:")
-    yield verbindung
-    verbindung.close()
+from tests.helpers import JETZT
 
 
 def eintrag(

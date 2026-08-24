@@ -8,13 +8,22 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows ist hier kein Selbstzweck: console.py biegt stdout auf UTF-8, weil
+        # Windows-Konsolen cp1252 nutzen. Ohne diesen Job laeuft der Pfad nie.
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.12", "3.13"]
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
       - name: Abhängigkeiten installieren
         run: uv sync --all-groups
@@ -22,7 +31,73 @@ jobs:
       - name: Linter
         run: uv run ruff check .
 
+      - name: Formatierung
+        run: uv run ruff format --check .
+
+      - name: Typen
+        run: uv run mypy
+
       # Kein API-Key nötig: die Tests prüfen Prompt-Bau und Antwort-Parsing gegen
       # feste Beispielantworten, es geht nichts ins Netz.
       - name: Tests
-        run: uv run pytest
+        run: uv run pytest --cov=recall --cov-report=term-missing
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Image-Namen muessen klein sein, github.repository behaelt die Schreibweise
+      # des Repos. Ohne diesen Schritt scheitert der Push an einem Grossbuchstaben.
+      - name: Image-Namen bestimmen
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      # Erst lokal bauen und ausprobieren. Ein kaputtes Image soll die Registry
+      # gar nicht erst erreichen.
+      - name: Image bauen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: recall:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke-Test
+        run: bash .github/smoke.sh
+
+      - name: An GHCR anmelden
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags bestimmen
+        if: github.ref == 'refs/heads/main'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Veröffentlichen
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

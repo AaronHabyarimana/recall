@@ -1,0 +1,40 @@
+# Zwei Dienste aus einem Image. Beide teilen sich dieselbe Lerndatenbank unter /data.
+#
+# Zur SQLite-Datei zwischen zwei Prozessen: das geht hier gut, weil beide nur kurze
+# Transaktionen fahren und SQLite sie serialisiert. Es ist aber die Grenze des
+# Aufbaus. Wer mehrere Nutzer gleichzeitig lernen lassen will, braucht Postgres,
+# nicht ein groesseres Volume.
+
+services:
+  ui:
+    build: .
+    image: recall:local
+    command: ["ui", "--kein-browser", "--host", "0.0.0.0", "--port", "8501", "--db", "/data/recall.db"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - recall-data:/data
+    # Nur fuer `recall generate` und `recall critic` noetig, die Oberflaeche laeuft ohne.
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+
+  api:
+    build: .
+    image: recall:local
+    command: ["api", "--host", "0.0.0.0", "--port", "8000", "--db", "/data/recall.db"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - recall-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  recall-data:

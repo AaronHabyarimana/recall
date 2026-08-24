@@ -1,5 +1,6 @@
 from recall.review.db import (
     all_cards,
+    card_by_id,
     connect,
     due_cards,
     due_forecast,
@@ -8,6 +9,7 @@ from recall.review.db import (
     orphaned_cards,
     rating_history,
     save_review,
+    scheduling_for,
     source_counts,
     stats,
 )
@@ -15,6 +17,7 @@ from recall.review.scheduling import new_card, now_utc, review, scheduler
 
 __all__ = [
     "all_cards",
+    "card_by_id",
     "connect",
     "due_cards",
     "due_forecast",
@@ -27,6 +30,7 @@ __all__ = [
     "review",
     "save_review",
     "scheduler",
+    "scheduling_for",
     "source_counts",
     "stats",
 ]

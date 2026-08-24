@@ -48,9 +48,7 @@ def verlaufsdiagramm(daten: list[tuple[str, int]]) -> alt.Chart:
     """Senkrechte Balken über die Tage - wie viele Karten wann fällig werden."""
     df = pd.DataFrame(daten, columns=["tag", "anzahl"])
     df["datum"] = pd.to_datetime(df["tag"])
-    df["label"] = [
-        f"{WOCHENTAGE[d.weekday()]} {d.day:02d}.{d.month:02d}." for d in df["datum"]
-    ]
+    df["label"] = [f"{WOCHENTAGE[d.weekday()]} {d.day:02d}.{d.month:02d}." for d in df["datum"]]
     df.loc[0, "label"] = "heute"
 
     balken = (
@@ -111,8 +109,8 @@ def rangdiagramm(
     )
     # Direkte Beschriftung statt Werteachse: bei wenigen Balken ist die Zahl am Balken
     # schneller zu lesen als der Umweg über eine Achse.
-    beschriftung = grund.mark_text(
-        align="left", dx=6, color=MUTED, fontSize=12, font=FONT
-    ).encode(text="anzahl:Q")
+    beschriftung = grund.mark_text(align="left", dx=6, color=MUTED, fontSize=12, font=FONT).encode(
+        text="anzahl:Q"
+    )
 
     return _konfiguriert(balken + beschriftung, hoehe=max(90, 42 * len(beschriftungen)))

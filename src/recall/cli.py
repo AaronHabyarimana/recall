@@ -5,6 +5,7 @@
   recall critic   k.json --out k_geprueft.json    Karten bewerten und entdoppeln
   recall review   import|lernen|stats             Lerndatenbank füllen und abfragen
   recall ui                                       dasselbe im Browser
+  recall api                                      Lerndaten über HTTP
 
 Jede Stufe schreibt JSON und liest JSON: die Zwischenstände lassen sich ansehen und
 von Hand korrigieren, bevor die nächste Stufe darauf losgeht.
@@ -12,6 +13,7 @@ von Hand korrigieren, bevor die nächste Stufe darauf losgeht.
 
 import argparse
 
+from recall.api import cli as api_cli
 from recall.console import configure_stdout
 from recall.critic import cli as critic_cli
 from recall.generation import cli as generation_cli
@@ -25,6 +27,7 @@ BEFEHLE = [
     ("critic", "generierte Karten bewerten und entdoppeln", critic_cli),
     ("review", "Lerndatenbank füllen und im Terminal wiederholen", review_cli),
     ("ui", "Weboberfläche starten", ui_cli),
+    ("api", "HTTP-Schnittstelle auf die Lerndatenbank starten", api_cli),
 ]
 
 

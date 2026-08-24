@@ -1,11 +1,10 @@
-from datetime import UTC, datetime
+from datetime import UTC
 
 from fsrs import Card as FSRSCard
 from fsrs import Rating
 
 from recall.review.scheduling import new_card, now_utc, review
-
-JETZT = datetime(2026, 8, 3, 12, 0, tzinfo=UTC)
+from tests.helpers import JETZT
 
 
 def test_new_card_is_due_immediately():
