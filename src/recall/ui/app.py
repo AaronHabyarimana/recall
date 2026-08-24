@@ -16,7 +16,10 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+from fsrs import Card as FSRSCard
+from fsrs import Rating
 
+from recall.generation.models import Card
 from recall.review.db import (
     DEFAULT_DB_PATH,
     all_cards,
@@ -58,7 +61,7 @@ def neue_runde(conn: sqlite3.Connection, limit: int | None = None) -> None:
     st.session_state.bewertet = 0
 
 
-def bewerten(conn: sqlite3.Connection, karte, fsrs_card, rating) -> None:
+def bewerten(conn: sqlite3.Connection, karte: Card, fsrs_card: FSRSCard, rating: Rating) -> None:
     neuer_stand, log = review(fsrs_card, rating)
     # sofort speichern: ein geschlossener Tab mittendrin soll keinen Fortschritt kosten
     save_review(conn, karte.card_id, neuer_stand, log)
