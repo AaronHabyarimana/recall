@@ -305,3 +305,27 @@ def issue_counts(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         GROUP BY issue ORDER BY anzahl DESC, issue
         """
     ).fetchall()
+
+
+def card_by_id(conn: sqlite3.Connection, card_id: str) -> sqlite3.Row | None:
+    """Eine einzelne Karte, in derselben Form wie eine Zeile aus `all_cards`."""
+    return conn.execute(
+        """
+        SELECT c.card_id, c.question, c.answer, c.source_file, c.page_number,
+               c.keep, c.issue, c.reason, s.due,
+               (SELECT COUNT(*) FROM reviews r WHERE r.card_id = c.card_id) AS bewertungen
+        FROM cards c LEFT JOIN scheduling s ON s.card_id = c.card_id
+        WHERE c.card_id = ?
+        """,
+        (card_id,),
+    ).fetchone()
+
+
+def scheduling_for(conn: sqlite3.Connection, card_id: str) -> FSRSCard | None:
+    """Der FSRS-Zustand einer Karte, oder None wenn es die Karte nicht gibt.
+
+    Das Deserialisieren bleibt wie bei `due_cards` hier, damit der Blob das Modul
+    nicht verlässt.
+    """
+    row = conn.execute("SELECT fsrs_json FROM scheduling WHERE card_id = ?", (card_id,)).fetchone()
+    return FSRSCard.from_json(row["fsrs_json"]) if row else None

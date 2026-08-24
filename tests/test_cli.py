@@ -1,7 +1,11 @@
 """Der Dach-Befehl: Zerlegung der Argumente und Weiterreichen an die richtige Stufe."""
 
+import subprocess
+import sys
+
 import pytest
 
+from recall.api import cli as api_cli
 from recall.cli import BEFEHLE, build_parser
 from recall.critic import cli as critic_cli
 from recall.generation import cli as generation_cli
@@ -76,3 +80,35 @@ def test_ui_meldet_fehlendes_streamlit_verstaendlich(parser, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         ui_cli.run(parser.parse_args(["ui"]))
     assert "uv sync --group ui" in str(exc.value)
+
+
+def test_api_port_hat_einen_festen_standard(parser):
+    assert parser.parse_args(["api"]).port == api_cli.STANDARD_PORT
+
+
+def test_api_bindet_standardmaessig_nur_lokal(parser):
+    """Nach aussen horchen soll nur, wer es ausdruecklich verlangt oder im Container laeuft."""
+    assert parser.parse_args(["api"]).host == "127.0.0.1"
+    assert parser.parse_args(["ui"]).host == "127.0.0.1"
+
+
+def test_api_meldet_fehlendes_uvicorn_verstaendlich(parser, monkeypatch):
+    monkeypatch.setattr(api_cli.importlib.util, "find_spec", lambda name: None)
+    with pytest.raises(SystemExit) as exc:
+        api_cli.run(parser.parse_args(["api"]))
+    assert "uv sync --group api" in str(exc.value)
+
+
+def test_cli_zieht_fastapi_nicht_beim_start_herein():
+    """recall.cli laedt das api-Paket, um die Argumente zu bauen.
+
+    Wuerde dabei FastAPI importiert, waere die komplette CLI kaputt, sobald jemand
+    ohne die Gruppe `api` installiert. Genau das war schon einmal der Fall.
+    """
+    code = "import recall.cli, sys; assert 'fastapi' not in sys.modules, 'FastAPI zu frueh geladen'"
+    subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_cli_zieht_streamlit_nicht_beim_start_herein():
+    code = "import recall.cli, sys; assert 'streamlit' not in sys.modules"
+    subprocess.run([sys.executable, "-c", code], check=True)
