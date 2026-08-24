@@ -4,9 +4,22 @@
 
 [![CI](https://github.com/AaronHabyarimana/recall/actions/workflows/ci.yml/badge.svg)](https://github.com/AaronHabyarimana/recall/actions/workflows/ci.yml)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
+[![Image](https://img.shields.io/badge/ghcr.io-recall-blue?logo=docker&logoColor=white)](https://github.com/AaronHabyarimana/recall/pkgs/container/recall)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ![The review screen: one question, one answer, four ratings](docs/screenshots/lernen.jpg)
+
+## Run it without cloning
+
+The published image ships with the demo deck. Load the 17 sample cards, then open the
+review screen on http://localhost:8501.
+
+```bash
+docker run --rm -v recall-data:/data ghcr.io/aaronhabyarimana/recall \
+  review import samples/demo_cards.json --db /data/recall.db
+
+docker run --init --rm -p 8501:8501 -v recall-data:/data ghcr.io/aaronhabyarimana/recall
+```
 
 ## Why
 
@@ -76,6 +89,37 @@ uv run recall ui
 `recall review lernen` does the same reviewing in the terminal if you prefer that.
 `recall --help` lists everything.
 
+## HTTP API
+
+The same learning database over HTTP, for anything that is not the Streamlit UI.
+
+```bash
+uv run recall api --db data/demo.db
+```
+
+| Endpoint | What it returns |
+|---|---|
+| `GET /health` | Readiness and card count |
+| `GET /stats` | Totals, due count, review count |
+| `GET /cards` | All cards, filterable by `suche`, `quelle` and `verworfene` |
+| `GET /cards/{card_id}` | One card with the critic's verdict |
+| `GET /due` | Cards due now, longest overdue first |
+| `POST /reviews` | Records a rating and returns the next due date |
+
+Interactive docs live at `/docs`. FastAPI builds them from the same models it validates
+against, so there is no second spec to keep in sync.
+
+## Docker
+
+One image, two services, one shared database volume.
+
+```bash
+docker compose up          # UI on 8501, API on 8000
+```
+
+`recall` is the container entry point, so every CLI command works the same way inside
+the image. `docker run <image> review stats` is the local `recall review stats`.
+
 ## Design decisions
 
 **Card identity is derived from content, not assigned.** `card_id` is
@@ -100,6 +144,18 @@ it.
 optimiser that fits per-user parameters from review history. That history cannot be
 reconstructed after the fact — if you don't record it from the first card, the option is gone.
 
+**The database lives on a volume, not inside the container.** SQLite is a file, and a
+container's filesystem goes away with the container. Without `-v recall-data:/data` every
+`docker run` starts from zero and the learning progress is gone. Two processes sharing one
+SQLite file works here because the UI and the API both run short transactions. That is also
+the limit of this setup. Several people learning at the same time needs Postgres, not a
+bigger volume.
+
+**The Streamlit layer has no tests.** `ui/app.py` is roughly 300 lines of view code, and
+testing it properly costs more than it gives back. The queries behind it sit in
+`review/db.py` and are covered there, which is why they were put there in the first place.
+Coverage is 86 percent without the UI layer and 71 percent with it.
+
 **The pipeline stays on the command line; only reviewing is in the browser.** Generating cards
 for a full deck takes minutes of API calls. Streamlit re-runs its script on every click, which
 is the wrong shape for that job — and a progress bar in front of a batch job is a worse
@@ -119,8 +175,10 @@ reasoning, which is the most interesting thing in the database.
 ## Development
 
 ```bash
-uv run pytest          # 83 tests, no network
+uv run pytest          # 146 tests, no network
 uv run ruff check .
+uv run ruff format --check .
+uv run mypy
 ```
 
 The tests never call the API. LLM behaviour is covered by testing prompt construction and
@@ -134,6 +192,7 @@ src/recall/
 ├── generation/      chunks → cards
 ├── critic/          judge.py (quality) + dedupe.py (repeats)
 ├── review/          FSRS scheduling, SQLite, terminal CLI
+├── api/             FastAPI over the same queries
 └── ui/              Streamlit app
 ```
 
