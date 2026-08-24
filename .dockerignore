@@ -1,0 +1,19 @@
+# Ohne diese Liste wandern data/bd1.pdf (3 MB), die .venv und vor allem die .env
+# mit dem echten API-Key in den Build-Context.
+.git
+.github
+.venv
+.env
+data
+docs
+dist
+*.db
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+tests
+
+# .streamlit/config.toml wird gebraucht (Theme), secrets.toml darf nie ins Image.
+.streamlit/secrets.toml

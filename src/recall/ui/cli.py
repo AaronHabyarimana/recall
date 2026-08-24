@@ -1,6 +1,6 @@
 """Die Weboberfläche starten.
 
-Aufruf: recall ui [--db data/recall.db] [--port 8501]
+Aufruf: recall ui [--db data/recall.db] [--host 127.0.0.1] [--port 8501]
 
 Streamlit läuft als Unterprozess statt über seine Python-API: der Server bringt
 eigenes Signal-Handling mit, ein Strg-C soll ihn sauber beenden. Der Datenbankpfad
@@ -21,11 +21,17 @@ import webbrowser
 from recall.review.db import DEFAULT_DB_PATH
 from recall.ui import APP_PATH
 
+STANDARD_HOST = "127.0.0.1"
 STANDARD_PORT = 8501
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--db", default=str(DEFAULT_DB_PATH), help="Pfad zur Lerndatenbank")
+    parser.add_argument(
+        "--host",
+        default=STANDARD_HOST,
+        help=f"Adresse (Standard {STANDARD_HOST}, im Container 0.0.0.0)",
+    )
     parser.add_argument(
         "--port", type=int, default=STANDARD_PORT, help=f"Port (Standard {STANDARD_PORT})"
     )
@@ -60,13 +66,15 @@ def run(args: argparse.Namespace) -> None:
         "streamlit",
         "run",
         str(APP_PATH),
+        "--server.address",
+        args.host,
         "--server.port",
         str(args.port),
         "--server.headless",
         "true",
     ]
 
-    if not args.kein_browser:
+    if not args.kein_browser and args.host in ("127.0.0.1", "localhost"):
         threading.Thread(target=_browser_oeffnen, args=(args.port,), daemon=True).start()
 
     raise SystemExit(subprocess.call(befehl, env={**os.environ, "RECALL_DB": args.db}))
