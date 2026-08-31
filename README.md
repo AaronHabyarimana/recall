@@ -1,6 +1,6 @@
 # recall
 
-**Turns lecture slides into spaced-repetition flashcards — with a second LLM pass that throws away the bad ones.**
+**Turns lecture slides into flashcards. A second LLM pass throws out the bad ones.**
 
 [![CI](https://github.com/AaronHabyarimana/recall/actions/workflows/ci.yml/badge.svg)](https://github.com/AaronHabyarimana/recall/actions/workflows/ci.yml)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -11,8 +11,8 @@
 
 ## Run it without cloning
 
-The published image ships with the demo deck. Load the 17 sample cards, then open the
-review screen on http://localhost:8501.
+The image ships with the demo deck. Load the 17 sample cards, then open
+http://localhost:8501.
 
 ```bash
 docker run --rm -v recall-data:/data ghcr.io/aaronhabyarimana/recall \
@@ -23,24 +23,23 @@ docker run --init --rm -p 8501:8501 -v recall-data:/data ghcr.io/aaronhabyariman
 
 ## Why
 
-Rereading slides feels like studying and isn't. Flashcards work, but writing them is exactly
-the work you were trying to avoid — so let a model write them.
+Rereading slides is not studying. Flashcards work, but writing them takes as long as
+the studying you wanted to skip. So a model writes them.
 
-The catch is that generated cards are only half usable. A slide showing an example diagram
-yields *"Which poster is shown as an example?"* — a question that is unanswerable without the
-slide sitting right next to it. And because the generator sees one slide at a time, the same
-concept comes back as four near-identical cards across a 60-slide deck.
+The problem is what the model writes. It sees one slide at a time. That gives you
+questions like *"Which poster is shown as an example?"*, which need the slide sitting
+next to you, and it asks about the same concept several times across a long deck.
 
-So generation is only half the pipeline. The other half is a **critic** that reads the cards
-back and drops the ones that can't be learned from. On the deck this was built for, it kept
-93 of 100 cards and named a reason for each of the seven it cut.
+So there is a second stage. A critic reads the cards back, drops the ones you cannot
+learn from, and records a reason for each. On the deck this was built for it cut 7 of
+100 cards.
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
     A[PDF slides] --> B[Chunks<br/>one per page]
-    B --> C[Generation<br/>0–3 cards per slide]
+    B --> C[Generation<br/>0 to 3 cards per slide]
     C --> D[Critic<br/>judge + dedupe]
     D --> E[(SQLite)]
     E --> F[Review<br/>FSRS scheduling]
@@ -49,13 +48,13 @@ flowchart LR
 
 | Stage | What it does |
 |---|---|
-| **Ingest** | PyMuPDF, one chunk per page. Strips lines that repeat on >50% of pages (running headers), normalises bullet glyphs, drops page numbers and near-empty slides, and discards the earlier versions of build-up slides that appear three times with growing content. |
-| **Generate** | One request per slide, 0–3 cards. A slide with nothing worth asking about is allowed to produce nothing. |
-| **Critic** | Two independent checks. A **judge** rates cards in batches of ten against three failure modes: `kontextabhaengig` (unanswerable without the slide), `trivia` (not a concept), `unklar` (the answer doesn't answer the question). A **deduper** finds repeats across slides. Nothing is deleted — every card keeps its verdict and reason. |
-| **Review** | Cards land in SQLite. Scheduling is [FSRS](https://github.com/open-spaced-repetition/py-fsrs), the same algorithm Anki uses, targeting 90% recall. |
+| **Ingest** | PyMuPDF, one chunk per page. Removes lines that repeat on more than half the pages, normalises bullet glyphs, drops page numbers and near empty slides, and collapses build-up slides that appear several times with growing content. |
+| **Generate** | One request per slide, 0 to 3 cards. A slide with nothing worth asking about produces nothing. |
+| **Critic** | Two checks. A **judge** rates cards in batches of ten against three failure modes: `kontextabhaengig` (needs the slide), `trivia` (not a concept), `unklar` (the answer does not answer the question). A **deduper** finds repeats across slides. Nothing is deleted. Every card keeps its verdict and reason. |
+| **Review** | Cards land in SQLite. Scheduling is [FSRS](https://github.com/open-spaced-repetition/py-fsrs), the algorithm Anki uses, targeting 90% recall. |
 
-Each stage reads JSON and writes JSON, so you can open the intermediate files, see what the
-model did, and fix it by hand before the next stage runs.
+Each stage reads and writes JSON, so you can open the intermediate files and fix them
+by hand before the next stage runs.
 
 ## Quickstart
 
@@ -67,7 +66,7 @@ cd recall
 uv sync
 ```
 
-**Try it without an API key.** The repo ships 17 real cards from the deck this was built on,
+**Without an API key.** The repo ships 17 real cards from the deck this was built on,
 including the three the critic threw out:
 
 ```bash
@@ -75,8 +74,8 @@ uv run recall review import samples/demo_cards.json --db data/demo.db
 uv run recall ui --db data/demo.db
 ```
 
-**Run the full pipeline on your own slides.** Copy `.env.example` to `.env` and put a
-[Gemini API key](https://aistudio.google.com/apikey) in it — the free tier is enough:
+**On your own slides.** Copy `.env.example` to `.env` and put a
+[Gemini API key](https://aistudio.google.com/apikey) in it. The free tier is enough.
 
 ```bash
 uv run recall ingest   data/slides.pdf                          # look at what was extracted
@@ -86,12 +85,11 @@ uv run recall review import data/judged.json
 uv run recall ui
 ```
 
-`recall review lernen` does the same reviewing in the terminal if you prefer that.
-`recall --help` lists everything.
+`recall review lernen` reviews in the terminal instead. `recall --help` lists everything.
 
 ## HTTP API
 
-The same learning database over HTTP, for anything that is not the Streamlit UI.
+The same database over HTTP, for anything that is not the Streamlit UI.
 
 ```bash
 uv run recall api --db data/demo.db
@@ -106,8 +104,7 @@ uv run recall api --db data/demo.db
 | `GET /due` | Cards due now, longest overdue first |
 | `POST /reviews` | Records a rating and returns the next due date |
 
-Interactive docs live at `/docs`. FastAPI builds them from the same models it validates
-against, so there is no second spec to keep in sync.
+Interactive docs are at `/docs`, built from the same models the API validates against.
 
 ## Docker
 
@@ -117,58 +114,54 @@ One image, two services, one shared database volume.
 docker compose up          # UI on 8501, API on 8000
 ```
 
-`recall` is the container entry point, so every CLI command works the same way inside
-the image. `docker run <image> review stats` is the local `recall review stats`.
+`recall` is the container entry point, so `docker run <image> review stats` does the
+same as the local command.
 
 ## Design decisions
 
-**Card identity is derived from content, not assigned.** `card_id` is
-`sha256(question | source_file | page_number)[:12]`. Re-running the critic and re-importing
-therefore updates cards in place with no ID mapping and no migration step. The *answer* is
-deliberately left out of the hash: correcting a wrong answer should fix the card, not replace
-it with a new one and silently reset weeks of scheduling.
+**Card identity comes from content.** `card_id` is
+`sha256(question | source_file | page_number)[:12]`, so re-importing after a critic run
+updates cards in place with no ID mapping and no migration. The answer is left out of
+the hash on purpose. Fixing a wrong answer should not create a new card and reset weeks
+of scheduling.
 
-**Deduplication is two-stage, and it has to be.** Stage one is a cheap `difflib` similarity
-filter over normalised questions; stage two asks the model to judge only the surviving pairs.
-The split isn't caution — in the real deck, the single most textually similar pair of questions
-is *"How does the agglomerative process start?"* / *"How does the divisive process start?"*.
-Same words, opposite content. A threshold alone deletes one of them.
+**Deduplication needs two stages.** First a cheap `difflib` filter over normalised
+questions, then the model judges only the pairs that survive. The reason is concrete.
+In the real deck the most similar pair was *"How does the agglomerative process
+start?"* and *"How does the divisive process start?"*. Same words, opposite content. A
+threshold alone deletes one of them.
 
-**FSRS state is stored as an opaque JSON blob, with `due` broken out as its own column.**
-Stability, difficulty and step are algorithm internals that change between FSRS versions;
-pinning them into columns would mean a schema migration every upgrade. But *"which cards are
-due"* has to be answerable in SQL, so that one field is duplicated out where an index can reach
-it.
+**FSRS state is a JSON blob, with `due` in its own column.** Stability, difficulty and
+step are internals that change between FSRS versions, and columns for them would mean a
+migration on every upgrade. But "which cards are due" has to be answerable in SQL, so
+that one field is duplicated out where an index reaches it.
 
-**Every review is logged from day one, although nothing reads the log yet.** FSRS ships an
-optimiser that fits per-user parameters from review history. That history cannot be
-reconstructed after the fact — if you don't record it from the first card, the option is gone.
+**Every review is logged, although nothing reads the log yet.** The FSRS optimiser fits
+per-user parameters from review history. That history cannot be reconstructed later. If
+you do not record it from the first card, the option is gone.
 
-**The database lives on a volume, not inside the container.** SQLite is a file, and a
-container's filesystem goes away with the container. Without `-v recall-data:/data` every
-`docker run` starts from zero and the learning progress is gone. Two processes sharing one
-SQLite file works here because the UI and the API both run short transactions. That is also
-the limit of this setup. Several people learning at the same time needs Postgres, not a
-bigger volume.
+**The database lives on a volume, not in the container.** SQLite is a file, and a
+container's filesystem goes away with the container. Without `-v recall-data:/data`
+every `docker run` starts from zero. The UI and the API share one file, which works
+because both run short transactions. Several people learning at once would need
+Postgres.
 
-**The Streamlit layer has no tests.** `ui/app.py` is roughly 300 lines of view code, and
-testing it properly costs more than it gives back. The queries behind it sit in
-`review/db.py` and are covered there, which is why they were put there in the first place.
-Coverage is 86 percent without the UI layer and 71 percent with it.
+**The Streamlit layer has no tests.** `ui/app.py` is 299 lines of view code and testing
+it properly costs more than it returns. The queries behind it sit in `review/db.py` and
+are covered there. Coverage is 86 percent without the view layer and 71 percent with it.
 
-**The pipeline stays on the command line; only reviewing is in the browser.** Generating cards
-for a full deck takes minutes of API calls. Streamlit re-runs its script on every click, which
-is the wrong shape for that job — and a progress bar in front of a batch job is a worse
-experience than a terminal that just prints what it's doing.
+**The pipeline stays on the command line. Only reviewing is in the browser.** Generating
+cards for a full deck takes minutes of API calls, and Streamlit re-runs its script on
+every click, which is the wrong shape for a batch job.
 
 ## Screenshots
 
-The overview: what's due, what the critic threw out and why, and how you've been rating.
+What is due, what the critic threw out and why, and how you have been rating.
 
 ![Overview with due-date forecast, critic verdicts and rating distribution](docs/screenshots/uebersicht.jpg)
 
-The full collection, searchable and filterable — including the rejected cards with the critic's
-reasoning, which is the most interesting thing in the database.
+The full collection, searchable and filterable, including the rejected cards with the
+critic's reasoning.
 
 ![Card browser with search, source filter and critic verdicts](docs/screenshots/karten.jpg)
 
@@ -181,15 +174,15 @@ uv run ruff format --check .
 uv run mypy
 ```
 
-The tests never call the API. LLM behaviour is covered by testing prompt construction and
-response parsing against recorded replies, plus the retry logic against a stubbed client.
+The tests never call the API. LLM behaviour is covered by testing prompt construction
+and response parsing against recorded replies, plus the retry logic against a stub.
 
 ```
 src/recall/
 ├── cli.py           one entry point over all stages
 ├── llm_client.py    Gemini wrapper, retries on rate limits
-├── ingestion/       PDF → chunks, cleaning
-├── generation/      chunks → cards
+├── ingestion/       PDF to chunks, cleaning
+├── generation/      chunks to cards
 ├── critic/          judge.py (quality) + dedupe.py (repeats)
 ├── review/          FSRS scheduling, SQLite, terminal CLI
 ├── api/             FastAPI over the same queries
@@ -198,10 +191,10 @@ src/recall/
 
 ## A note on language
 
-The code, the CLI and the interface are German, because the tool was built for German lecture
-slides and the prompts have to be written in the language of the material. The architecture and
-this README are in English.
+The code, the CLI and the interface are German, because the tool was built for German
+lecture slides and the prompts have to match the language of the material. The README is
+in English.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
